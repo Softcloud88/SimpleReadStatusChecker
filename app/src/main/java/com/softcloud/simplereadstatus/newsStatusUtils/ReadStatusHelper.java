@@ -7,6 +7,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.preference.PreferenceManager;
 
+import java.util.HashSet;
 import java.util.List;
 
 /**
@@ -18,6 +19,9 @@ public class ReadStatusHelper<T> {
     private ReadableManager<T> readableManager;
     private ReadStatusDbHelper dbHelper;
     private SQLiteDatabase db;
+
+    private HashSet<String> fetchedRecordFromDb;
+
 
     private static final String PREF_KEY_NEWS_STATUS_LAST_CLEAN_TIME = "pref_key_news_status_last_clean_time";
     private static final int DEFAULT_STORE_DAYS = 7;
@@ -33,7 +37,27 @@ public class ReadStatusHelper<T> {
         instance.context = context;
         instance.readableManager = readableManager;
         instance.initDb();
+        instance.initRecordInMemory();
         return instance;
+    }
+
+    private void initRecordInMemory() {
+        fetchedRecordFromDb = new HashSet<>();
+        try {
+            Cursor cursor = getDb().query(READ_STATUS_TABLE_NAME, null, null, null, null, null, null);
+            while (cursor.moveToNext()) {
+                fetchedRecordFromDb.add(cursor.getString(cursor.getColumnIndex(KEY_CONTENT_MARKER)));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private HashSet<String> getRecordSet() {
+        if (fetchedRecordFromDb == null) {
+            initRecordInMemory();
+        }
+        return fetchedRecordFromDb;
     }
 
     public ReadStatusHelper addReadable(T readable) {
@@ -45,6 +69,8 @@ public class ReadStatusHelper<T> {
             cleanOldData();
         }
         String marker = readableManager.getContentMarker(readable);
+        readableManager.onRead(readable);
+        getRecordSet().add(marker);
         daysToStore = daysToStore < 1 ? DEFAULT_STORE_DAYS : daysToStore;
         getDb().beginTransaction();
         try {
@@ -66,11 +92,27 @@ public class ReadStatusHelper<T> {
         if (readableManager == null) {
             return this;
         }
+        for (T readable : readables) {
+            if (hasBeenRead(readable)) {
+                readableManager.markRead(readable);
+            } else {
+                readableManager.markNotRead(readable);
+            }
+        }
+        readableManager.onCheckFinish(readables);
+        return this;
+    }
+
+    @Deprecated
+    public ReadStatusHelper checkReadStatusFromDb(final List<T> readables) {
+        if (readableManager == null) {
+            return this;
+        }
         new Thread(new Runnable() {
             @Override
             public void run() {
                 for (T readable : readables) {
-                    if (isReadableRead(readable)) {
+                    if (checkIsReadableFromDb(readable)) {
                         readableManager.markRead(readable);
                     } else {
                         readableManager.markNotRead(readable);
@@ -82,7 +124,11 @@ public class ReadStatusHelper<T> {
         return this;
     }
 
-    private boolean isReadableRead(T readable) {
+    public boolean hasBeenRead(T readable) {
+        return readableManager != null && getRecordSet().contains(readableManager.getContentMarker(readable));
+    }
+
+    private boolean checkIsReadableFromDb(T readable) {
         boolean hasRead = false;
         try {
             Cursor cursor = getDb().query(READ_STATUS_TABLE_NAME, null, KEY_CONTENT_MARKER + " = ?"

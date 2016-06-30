@@ -8,6 +8,8 @@ import java.util.List;
 public interface ReadableManager<T> {
     String getContentMarker(T readable);
 
+    void onRead(T readable);
+
     void markRead(T readable);
 
     void markNotRead(T readable);

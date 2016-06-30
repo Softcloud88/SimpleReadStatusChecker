@@ -66,6 +66,12 @@ public class NewsAdapter extends BaseAdapter implements ReadableManager<News>{
     }
 
     @Override
+    public void onRead(News readable) {
+        readable.setHasRead(true);
+        notifyDataSetChanged();
+    }
+
+    @Override
     public void markRead(News readable) {
         readable.setHasRead(true);
     }
@@ -101,8 +107,6 @@ public class NewsAdapter extends BaseAdapter implements ReadableManager<News>{
                     @Override
                     public void onClick(View v) {
                         statusHelper.addReadable(news);
-                        news.setHasRead(true);
-                        notifyDataSetChanged();
                     }
                 });
             }
