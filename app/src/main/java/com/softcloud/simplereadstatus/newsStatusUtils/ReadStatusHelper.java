@@ -38,6 +38,7 @@ public class ReadStatusHelper<T> {
         instance.readableManager = readableManager;
         instance.initDb();
         instance.initRecordInMemory();
+        instance.tryToCleanOldData();
         return instance;
     }
 
@@ -65,8 +66,8 @@ public class ReadStatusHelper<T> {
     }
 
     public ReadStatusHelper addReadable(T readable, int daysToStore) {
-        if (shouldToClean() || readableManager == null) {
-            cleanOldData();
+        if (readableManager == null) {
+            return this;
         }
         String marker = readableManager.getContentMarker(readable);
         readableManager.onRead(readable);
@@ -141,7 +142,18 @@ public class ReadStatusHelper<T> {
         return hasRead;
     }
 
-    public ReadStatusHelper cleanOldData() {
+    private void tryToCleanOldData() {
+        if (shouldToClean()) {
+            cleanOldData();
+        }
+    }
+
+    private boolean shouldToClean() {
+        long lastCleanTime = getLongPreference(PREF_KEY_NEWS_STATUS_LAST_CLEAN_TIME, 0L);
+        return !TimeUtils.isToday(lastCleanTime);
+    }
+
+    private ReadStatusHelper cleanOldData() {
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -181,11 +193,6 @@ public class ReadStatusHelper<T> {
         if (dbHelper == null) {
             dbHelper = ReadStatusDbHelper.getInstance(context);
         }
-    }
-
-    private boolean shouldToClean() {
-        long lastCleanTime = getLongPreference(PREF_KEY_NEWS_STATUS_LAST_CLEAN_TIME, 0L);
-        return !TimeUtils.isToday(lastCleanTime);
     }
 
     public boolean setLongPreference(String key, long value) {
