@@ -1,8 +1,11 @@
-package com.softcloud.simplereadstatus;
+package com.softcloud.simplereadstatus.newsStatusUtils;
 
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.preference.PreferenceManager;
 
 import java.util.List;
 
@@ -16,6 +19,7 @@ public class ReadStatusHelper<T> {
     private ReadStatusDbHelper dbHelper;
     private SQLiteDatabase db;
 
+    private static final String PREF_KEY_NEWS_STATUS_LAST_CLEAN_TIME = "pref_key_news_status_last_clean_time";
     private static final int DEFAULT_STORE_DAYS = 7;
     private static final long DAY = 1000 * 60 * 60 * 24;
 
@@ -32,14 +36,15 @@ public class ReadStatusHelper<T> {
         return instance;
     }
 
-    public ReadStatusHelper addReadable(String marker) {
-        return addReadable(marker, DEFAULT_STORE_DAYS);
+    public ReadStatusHelper addReadable(T readable) {
+        return addReadable(readable, DEFAULT_STORE_DAYS);
     }
 
-    public ReadStatusHelper addReadable(String marker, int daysToStore) {
-        if (shouldToClean()) {
+    public ReadStatusHelper addReadable(T readable, int daysToStore) {
+        if (shouldToClean() || readableManager == null) {
             cleanOldData();
         }
+        String marker = readableManager.getContentMarker(readable);
         daysToStore = daysToStore < 1 ? DEFAULT_STORE_DAYS : daysToStore;
         getDb().beginTransaction();
         try {
@@ -58,6 +63,9 @@ public class ReadStatusHelper<T> {
     }
 
     public ReadStatusHelper checkReadStatus(final List<T> readables) {
+        if (readableManager == null) {
+            return this;
+        }
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -75,8 +83,16 @@ public class ReadStatusHelper<T> {
     }
 
     private boolean isReadableRead(T readable) {
-        // TODO: 16/6/29
-        return true;
+        boolean hasRead = false;
+        try {
+            Cursor cursor = getDb().query(READ_STATUS_TABLE_NAME, null, KEY_CONTENT_MARKER + " = ?"
+                    , new String[]{readableManager.getContentMarker(readable)}, null, null, null);
+            hasRead = cursor.moveToNext();
+            cursor.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return hasRead;
     }
 
     public ReadStatusHelper cleanOldData() {
@@ -94,6 +110,7 @@ public class ReadStatusHelper<T> {
                 }
             }
         }).start();
+        setLongPreference(PREF_KEY_NEWS_STATUS_LAST_CLEAN_TIME, System.currentTimeMillis());
         return this;
     }
 
@@ -123,5 +140,16 @@ public class ReadStatusHelper<T> {
     private boolean shouldToClean() {
         // TODO: 16/6/28
         return true;
+    }
+
+    public boolean setLongPreference(String key, long value) {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+        if(preferences != null) {
+            SharedPreferences.Editor editor = preferences.edit();
+            editor.putLong(key, value);
+            return editor.commit();
+        } else {
+            return false;
+        }
     }
 }

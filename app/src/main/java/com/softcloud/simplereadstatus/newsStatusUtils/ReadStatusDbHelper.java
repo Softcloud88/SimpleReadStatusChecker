@@ -1,11 +1,8 @@
-package com.softcloud.simplereadstatus;
+package com.softcloud.simplereadstatus.newsStatusUtils;
 
 import android.content.Context;
-import android.database.DatabaseErrorHandler;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
-
-import java.lang.annotation.Retention;
 
 /**
  * Created by Softcloud on 16/6/28.

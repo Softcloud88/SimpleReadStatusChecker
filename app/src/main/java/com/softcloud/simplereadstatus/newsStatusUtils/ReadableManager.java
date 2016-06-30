@@ -1,4 +1,4 @@
-package com.softcloud.simplereadstatus;
+package com.softcloud.simplereadstatus.newsStatusUtils;
 
 import java.util.List;
 

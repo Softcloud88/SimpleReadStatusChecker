@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="50dp"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:background="@color/colorAccent"
+    android:orientation="horizontal">
+
+    <TextView
+        android:id="@+id/text_title"
+        android:layout_gravity="center"
+        android:gravity="left|center_vertical"
+        android:textColor="@color/color_black"
+        android:paddingLeft="20dp"
+        tools:text="news 1 title"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+</LinearLayout>
