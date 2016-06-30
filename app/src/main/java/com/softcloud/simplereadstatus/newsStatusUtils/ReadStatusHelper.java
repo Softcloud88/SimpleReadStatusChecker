@@ -184,8 +184,8 @@ public class ReadStatusHelper<T> {
     }
 
     private boolean shouldToClean() {
-        // TODO: 16/6/28
-        return true;
+        long lastCleanTime = getLongPreference(PREF_KEY_NEWS_STATUS_LAST_CLEAN_TIME, 0L);
+        return !TimeUtils.isToday(lastCleanTime);
     }
 
     public boolean setLongPreference(String key, long value) {
@@ -197,5 +197,15 @@ public class ReadStatusHelper<T> {
         } else {
             return false;
         }
+    }
+
+    public long getLongPreference(String key, long defaultValue) {
+        long value = defaultValue;
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+        if(preferences != null) {
+            value = preferences.getLong(key, defaultValue);
+        }
+
+        return value;
     }
 }
